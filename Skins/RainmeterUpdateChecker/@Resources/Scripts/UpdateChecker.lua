@@ -55,14 +55,22 @@
 -- Plugin=WebParser
 -- URL=#updateCheckerUrl#
 -- Download=1
--- DownloadFile='Release.inc'
 -- OnConnectErrorAction=[!Log "Could not connect to update server" "Error"]
--- FinishAction=[!CommandMeasure MeasureUpdateCheckerScript "CheckForUpdate('#version#', '#section#', '#key#')"]
+-- FinishAction=[!CommandMeasure MeasureUpdateCheckerScript "CheckForUpdate('#version#', '#section#', '#key#', 'MeasureUpdateWebParser')"]
 --
 -- This is an example of the webparser measure used to download the remote file.
--- The important thing to note here is the DownloadFile option. This option
--- is a relative path from '#CURRENTPATH#\DownloadFile'. It is not possible to
--- relocate this file. 
+-- The important thing to note here is the last argument on the 'FinishAction'
+-- line. This must be the name of the WebParser measure, whatever that may
+-- be. The reason for this is that the path to the file that WebParser
+-- downloads is provided as the string value of the measure, and the script
+-- must be able to access it if the 'FilePath' argument in the script measure
+-- is not specified.
+--
+-- There is one more capability of this script: retrieving any of the values
+-- contained in the downloaded INI file. This allows you to, for example,
+-- display the changelog of the most recent version in the skin directly.
+-- It is also used to display the remote version that is being compared with
+-- the local version.
 --
 
 debug = false
@@ -84,6 +92,7 @@ function CheckForUpdate(cVersion, section, key, measure)
   -- cVersion: The skin's current version
   -- section: The section in the INI file that the remote version is contained in
   -- key: The key in the INI file that the remote version is contained in
+  -- measure: The name of the WebParser measure that downloaded the file
   if filePath == '' then filePath = SKIN:GetMeasure(measure):GetStringValue() end
   LogHelper(filePath, 'Debug')
   updateFile = ReadIni(filePath)

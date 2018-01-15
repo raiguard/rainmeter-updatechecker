@@ -1,11 +1,11 @@
---------------------------------------------------
+-- ------------------------------------------------
 -- Update Checker for Rainmeter
 -- v4.0.0
 -- By raiguard
 --
 -- Modified form of 'semver.lua' by kikito (https://github.com/kikito/semver.lua)
 --
---------------------------------------------------
+-- ------------------------------------------------
 --
 -- Release Notes:
 -- v4.0.0 - Removed hard-coded actions and replaced with arguments in the script
@@ -21,15 +21,48 @@
 -- v1.0.1 - Optimized gmatch function, more debug functionality
 -- v1.0.0 - Initial release
 --
--- --------------------
+-- --------------------------------------------------
 --
 -- This script compares two Semantic Versioning-formatted version strings to
 -- determine which one is newer, then takes action depending on the outcome
 -- of the comparison. It is intended for use as an "update checker" for Rainmeter
 -- skins, allowing you to notify your users when an update is available.
--- 
+--
 -- Please keep in mind that version strings must be formatted using the Semantic
 -- Versioning 2.0.0 format. See http://semver.org/ for additional information.
+--
+-- --------------------
+--
+-- INSTRUCTIONS FOR USE:
+--
+-- [MeasureUpdateCheckerScript]
+-- Measure=Script
+-- Script=#@#Scripts\UpdateChecker.lua
+-- UpToDateAction=[!ShowMeter "UpToDateString"]
+-- DevAction=[!ShowMeter "DevString"]
+-- UpdateAvailable=[!ShowMeter "UpdateAvailableString"]
+-- ParsingErrorAction=[!ShowMeter "ParsingErrorString"]
+-- 
+-- This is an example of the script measure you will use to invoke this script.
+-- Each action option is a series of bangs to execute when that outcome is
+-- reached by the comparison function. There is a fifth option, 'FilePath', that
+-- can be used to override the default file path of the downloaded file. It
+-- defaults to '#CURRENTPATH#\DownloadFile\Release.inc'. This is mainly used for
+-- the example, but could have some potential usecases in certain situations.
+--
+-- [MeasureUpdateWebParser]
+-- Measure=Plugin
+-- Plugin=WebParser
+-- URL=#updateCheckerUrl#
+-- Download=1
+-- DownloadFile='Release.inc'
+-- OnConnectErrorAction=[!Log "Could not connect to update server" "Error"]
+-- FinishAction=[!CommandMeasure MeasureUpdateCheckerScript "CheckForUpdate('#version#', '#section#', '#key#')"]
+--
+-- This is an example of the webparser measure used to download the remote file.
+-- The important thing to note here is the DownloadFile option. This option
+-- is a relative path from '#CURRENTPATH#\DownloadFile'. It is not possible to
+-- relocate this file. 
 --
 
 debug = false
@@ -43,14 +76,15 @@ function Initialize()
   if devAction == '' or devAction == nil then devAction = upToDateAction end
   filePath = SELF:GetOption('FilePath')
 
-  if filePath == '' or filePath == nil then filePath = SKIN:GetVariable('CURRENTPATH') .. 'DownloadFile\\Release.inc' end
-
 end
 
 function Update() end
 
-function CheckForUpdate(cVersion, section, key)
-
+function CheckForUpdate(cVersion, section, key, measure)
+  -- cVersion: The skin's current version
+  -- section: The section in the INI file that the remote version is contained in
+  -- key: The key in the INI file that the remote version is contained in
+  if filePath == '' then filePath = SKIN:GetMeasure(measure):GetStringValue() end
   LogHelper(filePath, 'Debug')
   updateFile = ReadIni(filePath)
   -- create version objects
@@ -76,6 +110,8 @@ function GetIniValue(section, key)
 
   if updateFile == nil then
     return ''
+  elseif updateFile[section] == nil then
+    return 'nil'
   else
     return tostring(updateFile[section][key])
   end

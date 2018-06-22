@@ -1,7 +1,11 @@
 [ReleaseVersions]
-stable=1.3.5
-dev=1.4.0-rc.1
+stable=1.2.2
+dev=1.3.0-beta.3
 
 [Changelogs]
-stableChangelog=v1.3.5 - 2018-2-10[#CRLF] - Fixed CPU meter background not updating properly when HWiNFO state changes[#CRLF] - Fixed CPU name not setting correct default
-devChangelog=v1.4.0-rc.1 - 2018-4-22[#CRLF] - Added clock gadget[#CRLF] - Fixed bugs with update checker
+stableChangelog=v1.2.2 - 2017-8-3[#CRLF]- ACTUALLY fixed core temperature issues[#CRLF]- Changed all author references to raiguard
+devChangelog=v1.3.0-beta.4 - 2018-1-15[#CRLF]- Added core voltages to CPU Meter[#CRLF]- Fixed download update button in setup skin[#CRLF]- Fixed large row spacing issues in Disks Meter[#CRLF]- Updated copyright information[#CRLF][#CRLF]NOTICE: In beta 3, the update button is broken, so you will need to manually download the update from GitHub. Find the link in the Gadget Manager, click on 'Releases', and download the update.
+
+[URLs]
+stableUrl=https://github.com/raiguard/ModernGadgets/releases/download/v1.2.2/ModernGadgets_1.2.2.rmskin
+devUrl=https://github.com/raiguard/ModernGadgets/releases/download/v1.3.0-beta.3/ModernGadgets_1.3.0-beta.3.rmskin

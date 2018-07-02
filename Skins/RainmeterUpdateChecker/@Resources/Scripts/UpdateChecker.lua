@@ -37,10 +37,7 @@ v1.0.0 - 2018-??-??:
 
 --------------------------------------------------
 
-This script compares two Semantic Versioning-formatted version strings to
-determine which one is newer, then takes action depending on the outcome
-of the comparison. It is intended for use as an "update checker" for Rainmeter
-skins, allowing you to notify your users when an update is available.
+This script takes
 
 Please keep in mind that version strings must be formatted using the Semantic
 Versioning 2.0.0 format. See http://semver.org/ for additional information.
@@ -52,26 +49,27 @@ INSTRUCTIONS FOR USE:
 [MeasureUpdateCheckerScript]
 Measure=Script
 Script=#@#Scripts\UpdateChecker.lua
+CheckForPrereleases=#checkForPrereleases#
 UpToDateAction=[!ShowMeter "UpToDateString"]
 DevAction=[!ShowMeter "DevString"]
 UpdateAvailableAction=[!ShowMeter "UpdateAvailableString"]
 ParsingErrorAction=[!ShowMeter "ParsingErrorString"]
 
 This is an example of the script measure you will use to invoke this script.
+The 'CheckForPrereleases' defines whether the update checker will compare
+with the most recent full release, or the most recent release whatsoever.
 Each action option is a series of bangs to execute when that outcome is
 reached by the comparison function.
 
-[MeasureUpdateWebParser]
-Measure=Plugin
-Plugin=WebParser
-URL=#updateCheckerUrl#
-UpdateRate=1800
+[MeasureUpdateCheck]
+Measure=WebParser
+URL=#webParserUrl#
 RegExp=(?siU)^(.*)$
 StringIndex=1
 UpdateRate=#updateCheckRate#
-OnConnectErrorAction=[!Log "Could not connect to update server" "Error"]
-FinishAction=[!CommandMeasure MeasureUpdateCheckerScript "CheckForUpdate('#version#', '#section#', '#key#', 'MeasureUpdateWebParser')"]
-Disabled=(#notifyUpdates# = 0)
+OnConnectErrorAction=[!Log "Couldn't connect to update server" "Error"]
+FinishAction=[!CommandMeasure MeasureUpdateCheckerScript "CheckForUpdate('#version#', 'MeasureUpdateCheck')"]
+DynamicVariables=1
 
 This is an example of the webparser measure used to download the information.
 The important thing to note here is the last argument on the 'FinishAction'
@@ -79,11 +77,24 @@ line. This must be the name of the WebParser measure, whatever that may
 be. This allows the script to actually retrieve the string that was downloaded,
 which lets the update check actually take place.
 
-There is one more capability of this script: retrieving any of the values
-contained in the downloaded INI file. This allows you to, for example,
-display the changelog of the most recent version in the skin directly.
-It could also be used to display the remote version that is being compared
-with the local version (i.e "Update v1.4.0 is available!")
+The script retrieves the raw JSON data from the GitHub API, then uses a JSON
+parser function to convert it into a LUA table. From there, the script extracts
+data for the most recent full release, and the most recent release regardless
+of whether or not it is a prerelease. Which release is compared to and provides
+the release information is determined by the 'CheckForPrereleases' option in the
+script measure.
+
+There are four values for each release that you can retrieve for displaying in
+your skin. Each value is retrieved using
+[&MeasureUpdateCheckerScript:GetReleaseInfo('key')]. Replace key with one of the
+following options:
+
+'name' - returns the tag version of the release
+'date' - returns the published date of the release
+'changelog' - returns the release's changelog, with the release version and
+              published date added to the beginning
+'downloadUrl' - returns the URL that can be used to download the .RMSKIN
+                attached to the release
 
 --------------------------------------------------
 ]]--
@@ -96,7 +107,7 @@ function Initialize()
   updateAvailableAction = SELF:GetOption('UpdateAvailableAction')
   parsingErrorAction = SELF:GetOption('ParsingErrorAction')
   devAction = SELF:GetOption('DevAction')
-  devUpdates = tonumber(SELF:GetOption('CheckForPrereleases', '1'))
+  checkForPrereleases = tonumber(SELF:GetOption('CheckForPrereleases', '1'))
   if devAction == '' or devAction == nil then devAction = upToDateAction end
   printIndent = ' '
   releases = {}
@@ -112,8 +123,15 @@ function CheckForUpdate(cVersion, measureName)
   apiJson = json.decode(SKIN:GetMeasure(measureName or 'MeasureUpdateCheck'):GetStringValue())
   releases = AssembleReleaseInfo(apiJson)
 
+  Compare(cVersion, releases[checkForPrereleases + 1]['name'])
+
+end
+
+-- compares two semver-formatted version strings
+function Compare(cVersion, rVersion)
+
   cVersion = v(cVersion)
-  rVersion = v(releases[devUpdates + 1]['name'])
+  rVersion = v(rVersion)
   if cVersion == rVersion then
     LogHelper('Up-to-date', 'Debug')
     SKIN:Bang(upToDateAction)
@@ -124,13 +142,14 @@ function CheckForUpdate(cVersion, measureName)
     LogHelper('Update available', 'Debug')
     SKIN:Bang(updateAvailableAction)
   else
-    LogHelper('WTF?', 'Debug')
+    LogHelper('Parsing error', 'Debug')
+    SKIN:Bang(parsingErrorAction)
   end
 
 end
 
 function GetReleaseInfo(key)
-  return releases[devUpdates + 1] and releases[devUpdates + 1][key] or '---'
+  return releases[checkForPrereleases + 1] and releases[checkForPrereleases + 1][key] or '---'
 end
 
 function AssembleReleaseInfo(jsonTable)
@@ -147,6 +166,7 @@ function AssembleReleaseInfo(jsonTable)
       releases[1]['name'] = jsonTable[k]['tag_name']:gsub('v', '')
       releases[1]['date'] = jsonTable[k]['published_at']:gsub('(.*)T(.*)', '%1')
       releases[1]['changelog'] = 'v' .. releases[1]['name'] .. ' - ' .. releases[1]['date'] .. ':\n' .. jsonTable[k]['body']:gsub('\r\n', '\n')
+      releases[1]['downloadUrl'] = jsonTable[k]['assets'][1]['browser_download_url']
     end
   end
 
@@ -154,7 +174,7 @@ function AssembleReleaseInfo(jsonTable)
   releases[2]['name'] = jsonTable[1]['tag_name']:gsub('v', '')
   releases[2]['date'] = jsonTable[1]['published_at']:gsub('(.*)T(.*)', '%1')
   releases[2]['changelog'] = 'v' .. releases[2]['name'] .. ' - ' .. releases[2]['date'] .. ':\n' .. jsonTable[1]['body']:gsub('\r\n', '\n')
-
+  releases[2]['downloadUrl'] = jsonTable[1]['assets'][1]['browser_download_url']
   return releases
 
 end

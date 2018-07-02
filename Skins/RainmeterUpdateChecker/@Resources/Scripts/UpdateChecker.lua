@@ -2,28 +2,38 @@
 --------------------------------------------------
 
 Update Checker for Rainmeter
-v4.1.0
+v5.0.0
 By raiguard
 
 Modified form of 'semver.lua' by kikito (https://github.com/kikito/semver.lua)
+Implements 'JSON.lua' by rxi (https://github.com/rxi/json.lua)
 
 --------------------------------------------------
 
 Release Notes:
-v4.1.0 - Switched to using the WebParser measure output rather than a downloaded
-        file for the ReadINI function
-v4.0.0 - Removed hard-coded actions and replaced with arguments in the script
-        measure; implemented "semver.lua" for more robust comparisons;
-        switched to using INI format for the remote version data; added
-        'GetIniValue' function for retrieving other information from remote
-v3.0.0 - Added support for update checking on development versions
-v2.1.0 - Fixed oversight where if the user is on a development version for an
-        outdated release, it would not return UpdateAvailable(), added
-        'ParsingError' return
-v2.0.0 - Removed dependancy on an output meter in favor of hard-coded actions,
-        added more documentation
-v1.0.1 - Optimized gmatch function, more debug functionality
-v1.0.0 - Initial release
+v5.0.0 - 2018-7.2:
+- Switched to use GitHub REST v3 API, rather than a customized INI file
+v4.1.0 - 2018-6-21:
+- Switched to using the WebParser measure output rather than a downloaded file
+  for the ReadINI function
+v4.0.0 - 2018-??-??:
+- Removed hard-coded actions and replaced with arguments in the script measure
+- Implemented "semver.lua" for more robust comparisons
+- Switched to using INI format for the remote version data
+- Added 'GetIniValue' function for retrieving other information from remote
+v3.0.0 - 2018-??-??:
+- Added support for update checking on development versions
+v2.1.0 - 2018-??-??:
+- Fixed oversight where if the user is on a development version for an
+  outdated release, it would not return UpdateAvailable()
+- Added 'ParsingError' return
+v2.0.0 - 2018-??-??:
+- Removed dependancy on an output meter in favor of hard-coded actions, added
+  more documentation
+v1.0.1 - 2018-??-??:
+- Optimized gmatch function, more debug functionality
+v1.0.0 - 2018-??-??:
+- Initial release
 
 --------------------------------------------------
 
@@ -78,7 +88,7 @@ with the local version (i.e "Update v1.4.0 is available!")
 --------------------------------------------------
 ]]--
 
-debug = true
+debug = false
 
 function Initialize()
 
@@ -148,44 +158,6 @@ function AssembleReleaseInfo(jsonTable)
   return releases
 
 end
-
--- prints the entire contents of a table to the Rainmeter log
-function PrintTable(table)
-  for k,v in pairs(table) do
-    if type(v) == 'table' then
-      local pI = printIndent
-      LogHelper(printIndent .. k .. ':')
-      printIndent = printIndent .. '  '
-      PrintTable(v)
-      printIndent = pI
-    else
-      LogHelper(printIndent .. k .. ': ' .. v)
-    end
-  end
-end
-
--- function CheckForUpdateOld(cVersion, section, key, measure)
-
---   inputFile = SKIN:GetMeasure(measure):GetStringValue()
---   updateFile = ReadIni(inputFile)
---   -- create version objects
---   local cVersion = v(cVersion)
---   local rVersion = v(updateFile[section][key])
-
---   if cVersion == rVersion then
---     LogHelper('Up-to-date', 'Debug')
---     SKIN:Bang(upToDateAction)
---   elseif cVersion > rVersion then
---     LogHelper('Development version', 'Debug')
---     SKIN:Bang(devAction)
---   elseif cVersion < rVersion then
---     LogHelper('Update available', 'Debug')
---     SKIN:Bang(updateAvailableAction)
---   else
---     LogHelper('WTF?', 'Debug')
---   end
-
--- end
 
 -- function to make logging messages less cluttered
 function LogHelper(message, type)

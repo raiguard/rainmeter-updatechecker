@@ -86,6 +86,7 @@ function Initialize()
   updateAvailableAction = SELF:GetOption('UpdateAvailableAction')
   parsingErrorAction = SELF:GetOption('ParsingErrorAction')
   devAction = SELF:GetOption('DevAction')
+  devUpdates = tonumber(SELF:GetOption('CheckForPrereleases', '1'))
   if devAction == '' or devAction == nil then devAction = upToDateAction end
   printIndent = ' '
   releases = {}
@@ -94,7 +95,8 @@ end
 
 function Update() end
 
-function CheckForUpdate(cVersion, devUpdates, measureName)
+function CheckForUpdate(cVersion, measureName)
+
 
   showPrereleases = tonumber(SELF:GetOption('ShowPrereleases', 1))
   apiJson = json.decode(SKIN:GetMeasure(measureName or 'MeasureUpdateCheck'):GetStringValue())
@@ -117,8 +119,8 @@ function CheckForUpdate(cVersion, devUpdates, measureName)
 
 end
 
-function GetReleaseInfo(index, key)
-  return releases[index] and releases[index][key] or '---'
+function GetReleaseInfo(key)
+  return releases[devUpdates + 1] and releases[devUpdates + 1][key] or '---'
 end
 
 function AssembleReleaseInfo(jsonTable)
